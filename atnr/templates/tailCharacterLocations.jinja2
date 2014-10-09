@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style type="text/css">
+            #canvas {
+                position: relative;
+            }
+            #marker-template {
+                display: none;
+            }
+            .dot {
+                position: absolute;
+                background-color: transparent;
+                border: 1px solid red;
+                width: 2px;
+                height: 2px;
+                border-radius: 11px;
+                box-sizing: border-box;
+            }
+            #markers {
+                overflow: hidden;
+            }
+            .marker {
+                border: 1px solid #000;
+                width: 180px;
+                float: left;
+            }
+            #canvas {
+                overflow: auto;
+                
+                position: fixed;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                top: 152px;
+                cursor: crosshair;;
+            }
+            #inner {
+                transform: scale(2.0,2.0);
+                transform-origin: top left;
+            }
+            #form {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 152px;
+                z-index: 100;
+                background-color: #fff;
+                overflow: auto;
+            }
+        </style>
+    </head>
+    <body>
+        <form method="POST">
+            <div id="form">
+                <div>
+                    Remaining: {{ remaining }}
+                </div>
+                <button>SAVE</button>
+                <div>
+                    <label>Tail #</label>
+                    <input type="text" name="tail" value="{{ info.tail }}" />
+                </div>
+                <a href="#" id="add-marker">ADD MARKER</a>
+                <div id="markers">
+                    <div id="marker-template">
+                        <div class="marker">
+                            <input type="hidden" name="markers" value="X" />
+                            <input type="text" id="x-X" name="x-X" readonly="true" value="" />
+                            ,
+                            <input type="text" id="y-X" name="y-X" readonly="true" value="" />
+                            <input type="radio" name="setting" id="selected-X" value="X" />
+                            <br/>
+                            <input type="radio" name="delete-X" value="true" /> Delete? <input type="radio" name="delete-X" value="false" checked /> Not?
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="canvas">
+                <div id="inner">
+                    <img src="/image/{{ info.id }}" id="image"  />
+                </div>
+            </div>
+        </form>
+        <script type="text/javascript">
+            window.onload = function() {
+                var img = document.getElementById('image');
+
+                var canvas = document.getElementById('canvas');
+                var inner = document.getElementById('inner');
+
+                var markerTpl = document.getElementById('marker-template');
+
+                var markers = document.getElementById('markers');
+                var addMarker = document.getElementById('add-marker');
+                var mi = 0;
+
+                addMarkerRow = function(data) {
+                    mi += 1;
+
+                    var div = document.createElement('div');
+                    div.innerHTML = markerTpl.innerHTML.replace(/X/g, mi);
+                    markers.appendChild(div);
+
+                    var div = document.createElement('div');
+                    div.id = 'dot-' + mi;
+                    div.className = 'dot';
+                    inner.appendChild(div);
+
+                    if(mi == 1) {
+                        document.getElementById('selected-1').checked=true;
+                    }
+
+                    if(data) {
+                        document.getElementById('x-'+mi).value = data[0] || '';
+                        document.getElementById('y-'+mi).value = data[1] || '';
+                        div.style.top = parseInt(data[1])-1 + "px";
+                        div.style.left = parseInt(data[0])-1 + "px";
+                    }
+                }
+
+                var characters = {{ charactersJson }};
+                if(characters.length > 0) {
+                    for(var characterI in characters) {
+                        var character = characters[characterI];
+                        addMarkerRow(character);
+                    }
+                }
+                else {
+                    for(i = 0; i < 6; i++) {
+                        addMarkerRow();
+                    }
+                }
+
+                addMarker.onclick = function(event) {
+                    addMarkerRow();
+                }
+
+                img.onclick = function(event) {
+                    console.log(event);
+                    var y = event.offsetY;
+                    var x = event.offsetX;
+                    console.log(x,y);
+
+                    var inputs = document.getElementsByName('setting');
+                    for(i in inputs) {
+                        var input = inputs[i];
+                        if(input.checked) {
+                            console.log(input.value);
+                            document.getElementById('x-'+input.value).value = x;
+                            document.getElementById('y-'+input.value).value = y;
+                            document.getElementById('dot-'+input.value).style.top = y-1 + "px";
+                            document.getElementById('dot-'+input.value).style.left = x-1 + "px";
+                        }
+                    }
+                }
+
+                window.onkeypress = function(event) {
+                    if(event.which == 32) {
+                        var seen = false;
+                        var inputs = document.getElementsByName('setting');
+                        for(i in inputs) {
+                            var input = inputs[i];
+                            if(input.checked) {
+                                seen = true;
+                            }
+                            else if(seen) {
+                                input.checked = true;
+                                seen = false;
+                            }
+                        }
+                        return false;
+                    }
+                }
+            }
+        </script>
+    </body>
+</html>

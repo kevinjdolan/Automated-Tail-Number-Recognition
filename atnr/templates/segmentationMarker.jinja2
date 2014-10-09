@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style type="text/css">
+            img {
+                width: 128px;
+                border: 1px solid red;
+            }
+        </style>
+    </head>
+    <body>
+        <div>
+            Remaining: <div id="remaining"></div>
+        </div>
+        <h1 id="letter"></h1>
+        <p id="status"></p>
+        <div>
+            <img src="" id="image"  />
+        </div>
+        <script type="text/javascript">
+            window.onload = function() {
+                var img = document.getElementById('image');
+                var remaining = document.getElementById('remaining');
+                var letter = document.getElementById('letter');
+                var status = document.getElementById('status');
+
+                var characters = {{ charactersJson }};
+                var SEGMENTATION = {{ segmentationJson }};
+                var current = 0;
+
+                updateCurrent = function() {
+                    console.log(current);
+
+                    var character = characters[current];
+                    img.src = character.url;
+                    letter.innerHTML = character.character;
+                    status.innerHTML = character.status;
+
+                    var numberRemaining = 0;
+                    for(var i in characters) {
+                        var character = characters[i];
+                        if(character.status == 'INFERRED') {
+                            numberRemaining += 1;
+                        }
+                    }
+                    remaining.innerHTML = numberRemaining;
+                }
+
+                saveCharacter = function(character) {
+                    console.log("SAVE!");
+                    console.log(character);
+
+                    httpRequest = new XMLHttpRequest();
+                    httpRequest.open('POST', 
+                        (
+                            '/segmentation-marker/'
+                            +'?segmentation='+SEGMENTATION
+                            +'&info='+JSON.stringify(character)
+                        ), 
+                        true
+                    );
+                    httpRequest.send(null);
+                }
+
+                for(i = 0; i < characters.length; i++) {
+                    var character = characters[i];
+                    if(character.status == 'INFERRED') {
+                        current = i;
+                        updateCurrent();
+                        break;
+                    }
+                }
+
+                window.onkeypress = function(event) {
+                    var character = characters[current];
+                    if(event.which == 115) { //s
+                        character.status = 'OK';
+                        saveCharacter(character);
+                        current += 1;
+                        updateCurrent();
+                    }
+                    else if(event.which == 97) { // a
+                        current -= 1;
+                        updateCurrent();
+                    }
+                    else if(event.which == 32) { //space
+                        character.status = 'BAD';
+                        saveCharacter(character);
+                        current += 1;
+                        updateCurrent();
+                    }
+                }
+            }
+        </script>
+    </body>
+</html>
